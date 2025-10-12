@@ -751,27 +751,20 @@ pack.addSyncTable({
         name: 'days',
         optional: true,
         description: 'The number of days you want to retrieve expenses from.',
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'status',
-        optional: true,
-        description: 'The status of expenses you want to retrieve.',
-      }),
+      })
     ],
     execute: async function (args, context) {
-      const [slug, limit, days, status] = args;
+      const [slug, limit, days] = args;
 
       const query = `
       query searchExpenses(
         $host: AccountReferenceInput, 
-        $status: ExpenseStatusFilter,
         $dateFrom: DateTime,
         $limit: Int, 
         $offset: Int
         ) 
         {
-        expenses(host: $host, dateFrom: $dateFrom, limit: $limit, offset: $offset, status: $status) {
+        expenses(host: $host, dateFrom: $dateFrom, limit: $limit, offset: $offset) {
           limit
           offset
           totalCount
@@ -889,7 +882,6 @@ pack.addSyncTable({
         limit: number;
         offset: number;
         dateFrom?: string;
-        status?: string;
       };
 
       const host = { slug: slug };
@@ -905,9 +897,6 @@ pack.addSyncTable({
 
       if (dateFrom) {
         variables.dateFrom = dateFrom;
-      }
-      if (status) {
-        variables.status = status;
       }
 
       const response = await context.fetcher.fetch({
@@ -1161,12 +1150,6 @@ pack.addSyncTable({
         description: 'The number of days you want to retrieve expenses from.',
       }),
       coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'status',
-        optional: true,
-        description: 'The status of expenses you want to retrieve.',
-      }),
-      coda.makeParameter({
         type: coda.ParameterType.Boolean,
         name: 'withChildren',
         optional: true,
@@ -1179,14 +1162,13 @@ pack.addSyncTable({
       const query = `
       query searchExpenses(
         $account: AccountReferenceInput, 
-        $status: ExpenseStatusFilter,
         $dateFrom: DateTime,
         $withChildren: Boolean,
         $limit: Int, 
         $offset: Int
         ) 
         {
-        expenses(account: $account, dateFrom: $dateFrom, limit: $limit, offset: $offset, status: $status, includeChildrenExpenses: $withChildren) {
+        expenses(account: $account, dateFrom: $dateFrom, limit: $limit, offset: $offset, includeChildrenExpenses: $withChildren) {
           limit
           offset
           totalCount
@@ -1341,7 +1323,6 @@ pack.addSyncTable({
         limit: number;
         offset: number;
         dateFrom?: string;
-        status?: string;
         withChildren?: boolean;
       };
 
@@ -1358,9 +1339,6 @@ pack.addSyncTable({
 
       if (dateFrom) {
         variables.dateFrom = dateFrom;
-      }
-      if (status) {
-        variables.status = status;
       }
       if (withChildren) {
         variables.withChildren = withChildren;
@@ -2171,17 +2149,6 @@ pack.addSyncTable({
         }
       }
       `;
-
-      // Utility function to extract images from HTML content
-      function extractImagesFromHTML(html) {
-        const regex = /<img[^>]+src="?([^"\s]+)"?\s*\/?>/g;
-        let match;
-        const images = [];
-        while ((match = regex.exec(html)) !== null) {
-          images.push(match[1]);
-        }
-        return images;
-      }
 
       const [host, limit, days] = args;
 

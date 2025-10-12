@@ -1,0 +1,140 @@
+ query (
+  $account: [AccountReferenceInput!]
+  $limit: Int!
+  $offset: Int!
+  $type: TransactionType
+  $paymentMethodType: [PaymentMethodType]
+  $paymentMethodService: [PaymentMethodService]
+  $excludeAccount: [AccountReferenceInput]
+  $fromAccount: AccountReferenceInput
+  $host: AccountReferenceInput
+  $orderBy: ChronologicalOrderInput!
+  $amount: AmountRangeInput
+  $dateFrom: DateTime
+  $dateTo: DateTime
+  $clearedFrom: DateTime
+  $clearedTo: DateTime
+  $searchTerm: String
+  $hasDebt: Boolean
+  $hasExpense: Boolean
+  $expense: ExpenseReferenceInput
+  $expenseType: [ExpenseType]
+  $hasOrder: Boolean
+  $order: OrderReferenceInput
+  $includeHost: Boolean!
+  $includeRegularTransactions: Boolean!
+  $includeIncognitoTransactions: Boolean!
+  $includeChildrenTransactions: Boolean!
+  $includeGiftCardTransactions: Boolean!
+  $includeDebts: Boolean!
+  $kind: [TransactionKind]
+  $group: [String]
+  $virtualCard: [VirtualCardReferenceInput]
+  $isRefund: Boolean
+  $merchantId: [String]
+  $accountingCategory: [String]
+  $paymentMethod: [PaymentMethodReferenceInput]
+  $payoutMethod: PayoutMethodReferenceInput
+  $dynamic: Boolean
+  $full: Boolean
+) {
+  transactions(
+    account: $account
+    limit: $limit
+    offset: $offset
+    type: $type
+    paymentMethodType: $paymentMethodType
+    paymentMethodService: $paymentMethodService
+    excludeAccount: $excludeAccount
+    fromAccount: $fromAccount
+    host: $host
+    orderBy: $orderBy
+    amount: $amount
+    dateFrom: $dateFrom
+    dateTo: $dateTo
+    clearedFrom: $clearedFrom
+    clearedTo: $clearedTo
+    searchTerm: $searchTerm
+    hasDebt: $hasDebt
+    hasExpense: $hasExpense
+    expense: $expense
+    expenseType: $expenseType
+    hasOrder: $hasOrder
+    order: $order
+    includeHost: $includeHost
+    includeRegularTransactions: $includeRegularTransactions
+    includeIncognitoTransactions: $includeIncognitoTransactions
+    includeChildrenTransactions: $includeChildrenTransactions
+    includeGiftCardTransactions: $includeGiftCardTransactions
+    includeDebts: $includeDebts
+    kind: $kind
+    group: $group
+    virtualCard: $virtualCard
+    isRefund: $isRefund
+    merchantId: $merchantId
+    accountingCategory: $accountingCategory
+    paymentMethod: $paymentMethod
+    payoutMethod: $payoutMethod
+  ) {
+    offset
+    limit
+    totalCount
+    nodes {
+      id
+      legacyId
+      uuid
+      amount {
+        value
+        currency
+        valueInCents
+        exchangeRate {
+          value
+          source
+          fromCurrency
+          toCurrency
+          date
+          isApproximate
+        } 
+      }
+      group
+      type
+      kind
+      refundKind
+      description(dynamic: $dynamic, full: $full)
+      hostCurrencyFxRate
+      paymentProcessorUrl
+      createdAt
+      updatedAt
+      clearedAt
+      isRefunded
+      isRefund
+      isDisputed
+      isInReview
+      isOrderRejected
+      merchantId
+      invoiceTemplate
+    }
+    kinds
+    paymentMethodTypes
+  }
+}
+
+// Variables
+{
+  "account": {
+    "slug": "raft"
+  },
+  "limit": 100,
+  "offset": 0,
+  "orderBy": {
+    "field": "CREATED_AT",
+    "direction": "DESC"
+  },
+  "includeHost": true,
+  "includeRegularTransactions": true,
+  "includeIncognitoTransactions": true,
+  "includeChildrenTransactions": true,
+  "includeGiftCardTransactions": true,
+  "includeDebts": true,
+  "full": true
+}

@@ -1,3 +1,3 @@
 # opencollective-coda
 
-A pack to access the Open Collective API through Coda.io
+RAFT's custom pack for importing Open Collective data into Coda.io.
