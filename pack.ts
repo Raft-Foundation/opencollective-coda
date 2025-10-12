@@ -486,6 +486,129 @@ const UpdateSchema = coda.makeObjectSchema({
   displayProperty: 'title',
 });
 
+const TransactionSchema = coda.makeObjectSchema({
+  properties: {
+    id: {
+      type: coda.ValueType.String,
+      description: 'The ID of the transaction.',
+    },
+    legacyId: {
+      type: coda.ValueType.Number,
+      description: 'The legacy ID of the transaction.',
+    },
+    uuid: {
+      type: coda.ValueType.String,
+      description: 'The UUID of the transaction.',
+    },
+    amountValue: {
+      type: coda.ValueType.Number,
+      description: 'The amount value of the transaction.',
+    },
+    amountCurrency: {
+      type: coda.ValueType.String,
+      description: 'The currency of the transaction.',
+    },
+    amountValueInCents: {
+      type: coda.ValueType.Number,
+      description: 'The amount value in cents of the transaction.',
+    },
+    exchangeRateValue: {
+      type: coda.ValueType.Number,
+      description: 'The exchange rate value.',
+    },
+    exchangeRateSource: {
+      type: coda.ValueType.String,
+      description: 'The source of the exchange rate.',
+    },
+    exchangeRateFromCurrency: {
+      type: coda.ValueType.String,
+      description: 'The from currency of the exchange rate.',
+    },
+    exchangeRateToCurrency: {
+      type: coda.ValueType.String,
+      description: 'The to currency of the exchange rate.',
+    },
+    exchangeRateDate: {
+      type: coda.ValueType.String,
+      description: 'The date of the exchange rate.',
+    },
+    exchangeRateIsApproximate: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the exchange rate is approximate.',
+    },
+    group: {
+      type: coda.ValueType.String,
+      description: 'The group of the transaction.',
+    },
+    type: {
+      type: coda.ValueType.String,
+      description: 'The type of the transaction.',
+    },
+    kind: {
+      type: coda.ValueType.String,
+      description: 'The kind of the transaction.',
+    },
+    refundKind: {
+      type: coda.ValueType.String,
+      description: 'The refund kind of the transaction.',
+    },
+    description: {
+      type: coda.ValueType.String,
+      description: 'The description of the transaction.',
+    },
+    hostCurrencyFxRate: {
+      type: coda.ValueType.Number,
+      description: 'The host currency FX rate.',
+    },
+    paymentProcessorUrl: {
+      type: coda.ValueType.String,
+      description: 'The payment processor URL.',
+    },
+    createdAt: {
+      type: coda.ValueType.String,
+      description: 'The date the transaction was created.',
+    },
+    updatedAt: {
+      type: coda.ValueType.String,
+      description: 'The date the transaction was updated.',
+    },
+    clearedAt: {
+      type: coda.ValueType.String,
+      description: 'The date the transaction was cleared.',
+    },
+    isRefunded: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the transaction is refunded.',
+    },
+    isRefund: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the transaction is a refund.',
+    },
+    isDisputed: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the transaction is disputed.',
+    },
+    isInReview: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the transaction is in review.',
+    },
+    isOrderRejected: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the order is rejected.',
+    },
+    merchantId: {
+      type: coda.ValueType.String,
+      description: 'The merchant ID of the transaction.',
+    },
+    invoiceTemplate: {
+      type: coda.ValueType.String,
+      description: 'The invoice template of the transaction.',
+    },
+  },
+  idProperty: 'id',
+  displayProperty: 'description',
+});
+
 const CollectiveSchema = coda.makeObjectSchema({
   properties: {
     collectiveId: {
@@ -2219,6 +2342,252 @@ pack.addSyncTable({
           offset: new_offset,
         };
       }
+
+      return {
+        result: rows,
+        continuation: continuation,
+      };
+    },
+  },
+});
+
+// Transactions
+pack.addSyncTable({
+  name: 'Transactions',
+  description: 'Lists all transactions for an account.',
+  identityName: 'Transaction',
+  schema: TransactionSchema,
+  formula: {
+    name: 'SyncTransactions',
+    description: 'Syncs transactions for an account.',
+    parameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'accountSlug',
+        description: 'The slug of the account you want to retrieve transactions from.',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.Number,
+        name: 'limit',
+        optional: true,
+        description: 'The number of transactions you want to retrieve per request.',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'type',
+        optional: true,
+        description: 'The type of transactions to retrieve (CREDIT or DEBIT).',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.Number,
+        name: 'days',
+        optional: true,
+        description: 'The number of days you want to retrieve transactions from.',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.Boolean,
+        name: 'includeHost',
+        optional: true,
+        description: 'Whether to include host transactions.',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.Boolean,
+        name: 'includeChildren',
+        optional: true,
+        description: 'Whether to include transactions from child accounts.',
+      }),
+    ],
+    execute: async function (args, context) {
+      const [accountSlug, limit = 100, type, days, includeHost = true, includeChildren = true] = args;
+
+      const query = `
+        query (
+          $account: [AccountReferenceInput!]
+          $limit: Int!
+          $offset: Int!
+          $type: TransactionType
+          $orderBy: ChronologicalOrderInput!
+          $dateFrom: DateTime
+          $includeHost: Boolean!
+          $includeRegularTransactions: Boolean!
+          $includeIncognitoTransactions: Boolean!
+          $includeChildrenTransactions: Boolean!
+          $includeGiftCardTransactions: Boolean!
+          $includeDebts: Boolean!
+          $dynamic: Boolean
+          $full: Boolean
+        ) {
+          transactions(
+            account: $account
+            limit: $limit
+            offset: $offset
+            type: $type
+            orderBy: $orderBy
+            dateFrom: $dateFrom
+            includeHost: $includeHost
+            includeRegularTransactions: $includeRegularTransactions
+            includeIncognitoTransactions: $includeIncognitoTransactions
+            includeChildrenTransactions: $includeChildrenTransactions
+            includeGiftCardTransactions: $includeGiftCardTransactions
+            includeDebts: $includeDebts
+          ) {
+            offset
+            limit
+            totalCount
+            nodes {
+              id
+              legacyId
+              uuid
+              amount {
+                value
+                currency
+                valueInCents
+                exchangeRate {
+                  value
+                  source
+                  fromCurrency
+                  toCurrency
+                  date
+                  isApproximate
+                } 
+              }
+              group
+              type
+              kind
+              refundKind
+              description(dynamic: $dynamic, full: $full)
+              hostCurrencyFxRate
+              paymentProcessorUrl
+              createdAt
+              updatedAt
+              clearedAt
+              isRefunded
+              isRefund
+              isDisputed
+              isInReview
+              isOrderRejected
+              merchantId
+              invoiceTemplate
+            }
+            kinds
+            paymentMethodTypes
+          }
+        }
+      `;
+
+      let offset = 0;
+      if (context.sync.continuation) {
+        offset = context.sync.continuation.offset as number;
+      }
+
+      type VariablesType = {
+        account: { slug: string }[];
+        limit: number;
+        offset: number;
+        type?: string;
+        orderBy: {
+          field: string;
+          direction: string;
+        };
+        dateFrom?: string;
+        includeHost: boolean;
+        includeRegularTransactions: boolean;
+        includeIncognitoTransactions: boolean;
+        includeChildrenTransactions: boolean;
+        includeGiftCardTransactions: boolean;
+        includeDebts: boolean;
+        dynamic?: boolean;
+        full?: boolean;
+      };
+
+      const account = [{ slug: accountSlug }];
+
+      const variables: VariablesType = {
+        account,
+        limit,
+        offset,
+        orderBy: {
+          field: 'CREATED_AT',
+          direction: 'DESC',
+        },
+        includeHost,
+        includeRegularTransactions: true,
+        includeIncognitoTransactions: true,
+        includeChildrenTransactions: includeChildren,
+        includeGiftCardTransactions: true,
+        includeDebts: true,
+        full: true,
+      };
+
+      if (type) {
+        variables.type = type;
+      }
+
+      let dateFrom;
+      if (days) {
+        const currentDate = new Date();
+        currentDate.setDate(currentDate.getDate() - days);
+        dateFrom = currentDate.toISOString();
+      }
+
+      if (dateFrom) {
+        variables.dateFrom = dateFrom;
+      }
+
+      const response = await context.fetcher.fetch({
+        method: 'POST',
+        url: 'https://api.opencollective.com/graphql/v2',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      const res = await response.body.data.transactions;
+      const rows = [];
+      const total = res.totalCount as number;
+      const new_offset = res.offset as number;
+
+      let continuation;
+      if (limit + new_offset < total) {
+        continuation = { offset: new_offset + limit };
+      }
+
+      res.nodes.forEach(transaction => {
+        const exchangeRate = transaction.amount?.exchangeRate;
+        
+        rows.push({
+          id: transaction.id,
+          legacyId: transaction.legacyId,
+          uuid: transaction.uuid,
+          amountValue: transaction.amount?.value,
+          amountCurrency: transaction.amount?.currency,
+          amountValueInCents: transaction.amount?.valueInCents,
+          exchangeRateValue: exchangeRate?.value,
+          exchangeRateSource: exchangeRate?.source,
+          exchangeRateFromCurrency: exchangeRate?.fromCurrency,
+          exchangeRateToCurrency: exchangeRate?.toCurrency,
+          exchangeRateDate: exchangeRate?.date,
+          exchangeRateIsApproximate: exchangeRate?.isApproximate,
+          group: transaction.group,
+          type: transaction.type,
+          kind: transaction.kind,
+          refundKind: transaction.refundKind,
+          description: transaction.description,
+          hostCurrencyFxRate: transaction.hostCurrencyFxRate,
+          paymentProcessorUrl: transaction.paymentProcessorUrl,
+          createdAt: transaction.createdAt,
+          updatedAt: transaction.updatedAt,
+          clearedAt: transaction.clearedAt,
+          isRefunded: transaction.isRefunded,
+          isRefund: transaction.isRefund,
+          isDisputed: transaction.isDisputed,
+          isInReview: transaction.isInReview,
+          isOrderRejected: transaction.isOrderRejected,
+          merchantId: transaction.merchantId,
+          invoiceTemplate: transaction.invoiceTemplate,
+        });
+      });
 
       return {
         result: rows,

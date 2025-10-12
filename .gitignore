@@ -134,3 +134,4 @@ dist
 # secrets
 .env
 .coda-credentials.json
+.coda.json
