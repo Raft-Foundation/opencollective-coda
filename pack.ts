@@ -11,6 +11,9 @@ pack.setUserAuthentication({
   type: coda.AuthenticationType.OAuth2,
   authorizationUrl: 'https://opencollective.com/oauth/authorize',
   tokenUrl: 'https://opencollective.com/oauth/token',
+  // Open Collective rejects operations outside the token's scopes, and defaults to none.
+  scopes: ['email', 'expenses', 'orders', 'transactions', 'virtualCards'],
+  scopeDelimiter: ',',
 });
 
 // Utility functions
