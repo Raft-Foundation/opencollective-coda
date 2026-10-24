@@ -73,6 +73,58 @@ describe('authentication', () => {
   });
 });
 
+describe('sync table columns', () => {
+  for (const table of pack.syncTables as any[]) {
+    it(`${table.name} features every property so all columns are created by default`, () => {
+      const properties = Object.keys(table.schema.properties);
+      assert.ok(properties.length > 0);
+      assert.deepEqual([...table.schema.featuredProperties].sort(), [...properties].sort());
+    });
+  }
+});
+
+describe('defaults', () => {
+  const emptyPage = (key: string) => ({ data: { [key]: { limit: 500, offset: 0, totalCount: 0, nodes: [] } } });
+
+  it('ExpensesToHost defaults to the raft host and a page size of 500', async () => {
+    const { context, sentRequest } = contextReturning(emptyPage('expenses'));
+    await runSync('ExpensesToHost', [], context);
+    const { variables } = sentRequest();
+    assert.deepEqual(variables.host, { slug: 'raft' });
+    assert.equal(variables.limit, 500);
+  });
+
+  it('ExpensesToHost pages by 500 when more remain and no limit was given', async () => {
+    const body = { data: { expenses: { limit: 500, offset: 0, totalCount: 1200, nodes: [expense()] } } };
+    const { context } = contextReturning(body);
+    const { continuation } = await runSync('ExpensesToHost', [], context);
+    assert.deepEqual(continuation, { offset: 500 });
+  });
+
+  it('ExpensesToCollective, HostedCollectives and Transactions need no parameters', async () => {
+    for (const [table, key] of [
+      ['ExpensesToCollective', 'expenses'],
+      ['HostedCollectives', 'accounts'],
+      ['Transactions', 'transactions'],
+    ]) {
+      const { context, sentRequest } = contextReturning(emptyPage(key));
+      await runSync(table, [], context);
+      const { variables } = sentRequest();
+      assert.equal(variables.limit, 500, table);
+      const slug = (variables.host ?? variables.account)?.slug ?? variables.account?.[0]?.slug;
+      assert.equal(slug, 'raft', table);
+    }
+  });
+
+  it('prefills raft and 500 for every sync table, including those that must stay required', () => {
+    for (const table of pack.syncTables as any[]) {
+      const [first, limit] = table.getter.parameters;
+      assert.equal(first.suggestedValue, 'raft', `${table.name} first parameter`);
+      assert.equal(limit.suggestedValue, 500, `${table.name} limit`);
+    }
+  });
+});
+
 describe('ExpensesToHost', () => {
   const page = (nodes: any[], totalCount = nodes.length, offset = 0) => ({
     data: { expenses: { limit: 100, offset, totalCount, nodes } },

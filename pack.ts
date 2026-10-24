@@ -16,6 +16,9 @@ pack.setUserAuthentication({
   scopeDelimiter: ',',
 });
 
+const DEFAULT_SLUG = 'raft';
+const DEFAULT_LIMIT = 500;
+
 // Utility functions
 
 function extractImagesFromHTML(html) {
@@ -41,6 +44,12 @@ function getResult(response, key: string) {
     throw new coda.UserVisibleError(`Open Collective returned an error: ${messages || 'no details provided'}`);
   }
   return res;
+}
+
+// Sync tables only create columns for a schema's featured properties when first added to a doc, so feature
+// every property to get all columns by default.
+function withAllColumns<T extends coda.GenericObjectSchema>(schema: T): T {
+  return { ...schema, featuredProperties: Object.keys(schema.properties) };
 }
 
 // Schema definitions
@@ -871,7 +880,7 @@ pack.addSyncTable({
   name: 'ExpensesToHost',
   description: 'Lists all expenses to host.',
   identityName: 'ExpenseToHost',
-  schema: ExpenseSchema,
+  schema: withAllColumns(ExpenseSchema),
   formula: {
     name: 'SyncExpensesToHost',
     description: 'Syncs expenses to host.',
@@ -879,11 +888,14 @@ pack.addSyncTable({
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'slug',
+        suggestedValue: DEFAULT_SLUG,
+        optional: true,
         description: 'The slug of the host you want to retrieve expenses to host from.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.Number,
         name: 'limit',
+        suggestedValue: DEFAULT_LIMIT,
         optional: true,
         description: 'The number of expenses you want to retrieve per request.',
       }),
@@ -895,7 +907,7 @@ pack.addSyncTable({
       })
     ],
     execute: async function (args, context) {
-      const [slug, limit, days] = args;
+      const [slug = DEFAULT_SLUG, limit = DEFAULT_LIMIT, days] = args;
 
       const query = `
       query searchExpenses(
@@ -1268,7 +1280,7 @@ pack.addSyncTable({
   name: 'ExpensesToCollective',
   description: 'Lists all expenses to collective.',
   identityName: 'ExpenseToCollective',
-  schema: ExpenseSchema,
+  schema: withAllColumns(ExpenseSchema),
   formula: {
     name: 'SyncExpensesToCollective',
     description: 'Syncs expenses to collective.',
@@ -1276,11 +1288,14 @@ pack.addSyncTable({
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'slug',
+        suggestedValue: DEFAULT_SLUG,
+        optional: true,
         description: 'The slug of the collective you want to retrieve expenses from.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.Number,
         name: 'limit',
+        suggestedValue: DEFAULT_LIMIT,
         optional: true,
         description: 'The number of expenses you want to retrieve per request.',
       }),
@@ -1298,7 +1313,7 @@ pack.addSyncTable({
       }),
     ],
     execute: async function (args, context) {
-      const [slug, limit, days, status, withChildren] = args;
+      const [slug = DEFAULT_SLUG, limit = DEFAULT_LIMIT, days, status, withChildren] = args;
 
       const query = `
       query searchExpenses(
@@ -1584,7 +1599,7 @@ pack.addSyncTable({
   name: 'OrdersToHost',
   description: 'Lists all orders to host.',
   identityName: 'OrderToHost',
-  schema: OrderSchema,
+  schema: withAllColumns(OrderSchema),
   formula: {
     name: 'SyncOrdersToHost',
     description: 'Syncs orders to host.',
@@ -1592,11 +1607,13 @@ pack.addSyncTable({
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'slug',
+        suggestedValue: DEFAULT_SLUG,
         description: 'The slug of the host you want to retrieve orders to host from.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.Number,
         name: 'limit',
+        suggestedValue: DEFAULT_LIMIT,
         description: 'The number of orders you want to retrieve per request.',
       }),
       coda.makeParameter({
@@ -1606,7 +1623,7 @@ pack.addSyncTable({
       }),
     ],
     execute: async function (args, context) {
-      const [slug, limit, months] = args;
+      const [slug = DEFAULT_SLUG, limit = DEFAULT_LIMIT, months] = args;
 
       const query = `
       query SearchOrders(
@@ -1751,7 +1768,7 @@ pack.addSyncTable({
   name: 'HostedCollectives',
   description: 'Lists all collectives.',
   identityName: 'HostedCollective',
-  schema: CollectiveSchema,
+  schema: withAllColumns(CollectiveSchema),
   formula: {
     name: 'SyncHostedCollectives',
     description: 'Syncs collectives.',
@@ -1760,17 +1777,21 @@ pack.addSyncTable({
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'slug',
+        suggestedValue: DEFAULT_SLUG,
+        optional: true,
         description: 'The slug of the host you want to retrieve collectives from.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.Number,
         name: 'limit',
+        suggestedValue: DEFAULT_LIMIT,
+        optional: true,
         description: 'The number of collectives you want to retrieve per request.',
       }),
     ],
 
     execute: async function (args, context) {
-      const [slug, limit] = args;
+      const [slug = DEFAULT_SLUG, limit = DEFAULT_LIMIT] = args;
 
       const dateOneMonthAgo = new Date();
       dateOneMonthAgo.setMonth(dateOneMonthAgo.getMonth() - 1);
@@ -2234,7 +2255,7 @@ pack.addSyncTable({
   name: 'UpdatesFromHostedCollectives',
   description: 'Lists all updates of collectives on the host.',
   identityName: 'UpdateFromHostedCollective',
-  schema: UpdateSchema,
+  schema: withAllColumns(UpdateSchema),
   formula: {
     name: 'SyncUpdatesFromHostedCollectives',
     description: 'Syncs updates of collectives on the host.',
@@ -2242,11 +2263,13 @@ pack.addSyncTable({
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'host',
+        suggestedValue: DEFAULT_SLUG,
         description: 'The slug of the host you want to retrieve updates from.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.Number,
         name: 'limit',
+        suggestedValue: DEFAULT_LIMIT,
         description: 'The number of updates you want to retrieve per request.',
       }),
       coda.makeParameter({
@@ -2291,7 +2314,7 @@ pack.addSyncTable({
       }
       `;
 
-      const [host, limit, days] = args;
+      const [host = DEFAULT_SLUG, limit = DEFAULT_LIMIT, days] = args;
 
       let offset = 0;
       if (context.sync.continuation) {
@@ -2374,7 +2397,7 @@ pack.addSyncTable({
   name: 'Transactions',
   description: 'Lists all transactions for an account.',
   identityName: 'Transaction',
-  schema: TransactionSchema,
+  schema: withAllColumns(TransactionSchema),
   formula: {
     name: 'SyncTransactions',
     description: 'Syncs transactions for an account.',
@@ -2382,11 +2405,14 @@ pack.addSyncTable({
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'accountSlug',
+        suggestedValue: DEFAULT_SLUG,
+        optional: true,
         description: 'The slug of the account you want to retrieve transactions from.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.Number,
         name: 'limit',
+        suggestedValue: DEFAULT_LIMIT,
         optional: true,
         description: 'The number of transactions you want to retrieve per request.',
       }),
@@ -2416,7 +2442,7 @@ pack.addSyncTable({
       }),
     ],
     execute: async function (args, context) {
-      const [accountSlug, limit = 100, type, days, includeHost = true, includeChildren = true] = args;
+      const [accountSlug = DEFAULT_SLUG, limit = DEFAULT_LIMIT, type, days, includeHost = true, includeChildren = true] = args;
 
       const query = `
         query (
