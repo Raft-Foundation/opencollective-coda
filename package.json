@@ -10,7 +10,8 @@
     "lint:quiet": "npm run lint -- --quiet",
     "prettier": "prettier \"*.@(js|ts|tsx|json|md)\"",
     "prettier:check": "npm run prettier -- --check",
-    "prettier:write": "npm run prettier -- --write"
+    "prettier:write": "npm run prettier -- --write",
+    "test": "esbuild test/pack.test.ts --bundle --platform=node --packages=external --outfile=.test-build/pack.test.js --log-level=error && node --test .test-build/pack.test.js"
   },
   "author": "",
   "license": "ISC",

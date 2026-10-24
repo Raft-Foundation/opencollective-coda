@@ -135,3 +135,6 @@ dist
 .env
 .coda-credentials.json
 .coda.json
+
+# test build output
+.test-build/
