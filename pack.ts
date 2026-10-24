@@ -25,6 +25,21 @@ function extractImagesFromHTML(html) {
   return images;
 }
 
+// Returns data[key] from a GraphQL response, or throws the API's own error message when the result (or any
+// node in it) is null, which is how partial failures such as permission errors surface.
+function getResult(response, key: string) {
+  const { data, errors } = response.body;
+  const res = data?.[key];
+  if (!res || (res.nodes && res.nodes.some(node => node == null))) {
+    const messages = (errors || [])
+      .slice(0, 3)
+      .map(error => error.message)
+      .join('; ');
+    throw new coda.UserVisibleError(`Open Collective returned an error: ${messages || 'no details provided'}`);
+  }
+  return res;
+}
+
 // Schema definitions
 
 const MemberSchema = coda.makeObjectSchema({
@@ -1031,7 +1046,7 @@ pack.addSyncTable({
         body: JSON.stringify({ query, variables }),
       });
 
-      const res = await response.body.data.expenses;
+      const res = getResult(response, 'expenses');
       const rows = [];
       const total = res.totalCount as number;
       const new_offset = res.offset as number;
@@ -1476,7 +1491,7 @@ pack.addSyncTable({
         body: JSON.stringify({ query, variables }),
       });
 
-      const res = await response.body.data.expenses;
+      const res = getResult(response, 'expenses');
       const rows = [];
       const total = res.totalCount as number;
       const new_offset = res.offset as number;
@@ -1679,7 +1694,7 @@ pack.addSyncTable({
         body: JSON.stringify({ query, variables }),
       });
 
-      const res = await response.body.data.accounts;
+      const res = getResult(response, 'accounts');
       const rows = [];
       const total = res.totalCount as number;
       const new_offset = res.offset as number;
@@ -2067,7 +2082,7 @@ pack.addSyncTable({
         body: JSON.stringify({ query, variables }),
       });
 
-      const res = await response.body.data.accounts;
+      const res = getResult(response, 'accounts');
       let rows = res.nodes;
       const total = res.totalCount as number;
       const new_offset = res.offset as number;
@@ -2291,7 +2306,7 @@ pack.addSyncTable({
         body: JSON.stringify({ query: updates_query, variables }),
       });
 
-      const res = await response.body.data.updates;
+      const res = getResult(response, 'updates');
       const rows = [];
       let new_offset = res.offset as number;
 
@@ -2543,7 +2558,7 @@ pack.addSyncTable({
         body: JSON.stringify({ query, variables }),
       });
 
-      const res = await response.body.data.transactions;
+      const res = getResult(response, 'transactions');
       const rows = [];
       const total = res.totalCount as number;
       const new_offset = res.offset as number;
