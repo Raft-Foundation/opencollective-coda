@@ -214,6 +214,34 @@ describe('ExpensesToHost', () => {
   });
 });
 
+describe('ExpensesToCollective', () => {
+  const emptyPage = { data: { expenses: { limit: 500, offset: 0, totalCount: 0, nodes: [] } } };
+
+  it('queries the collective by slug and includes child collectives when withChildren is true', async () => {
+    const { context, sentRequest } = contextReturning(emptyPage);
+    await runSync('ExpensesToCollective', ['some-collective', 100, undefined, true], context);
+    const { variables } = sentRequest();
+    assert.deepEqual(variables.account, { slug: 'some-collective' });
+    assert.equal(variables.limit, 100);
+    assert.equal(variables.withChildren, true);
+  });
+
+  it('applies days alongside withChildren', async () => {
+    const { context, sentRequest } = contextReturning(emptyPage);
+    await runSync('ExpensesToCollective', ['some-collective', 100, 7, true], context);
+    const { variables } = sentRequest();
+    assert.equal(variables.withChildren, true);
+    const ageInDays = (Date.now() - new Date(variables.dateFrom).getTime()) / 86_400_000;
+    assert.ok(Math.abs(ageInDays - 7) < 0.01, `dateFrom was ${variables.dateFrom}`);
+  });
+
+  it('leaves withChildren out when it is not set', async () => {
+    const { context, sentRequest } = contextReturning(emptyPage);
+    await runSync('ExpensesToCollective', ['some-collective', 100], context);
+    assert.equal(sentRequest().variables.withChildren, undefined);
+  });
+});
+
 describe('error handling across sync tables', () => {
   // Each sync table reads a different root field; a null there must produce a readable error, not a TypeError.
   const cases: [string, any[], string][] = [

@@ -1313,7 +1313,7 @@ pack.addSyncTable({
       }),
     ],
     execute: async function (args, context) {
-      const [slug = DEFAULT_SLUG, limit = DEFAULT_LIMIT, days, status, withChildren] = args;
+      const [slug = DEFAULT_SLUG, limit = DEFAULT_LIMIT, days, withChildren] = args;
 
       const query = `
       query searchExpenses(
